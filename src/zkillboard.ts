@@ -4,6 +4,13 @@ import { RedisQResponse, ZKBPackage } from './types';
 
 type TransformResult = { message: string; raw: ZKBPackage };
 
+const IGNORED_VICTIM_CORPORATIONS = [
+  // NOTE(secondfry): Blood Raiders
+  1000134,
+  // NOTE(secondfry): Guristas
+  1000127,
+];
+
 const debug = getDebug('zkillboard');
 
 const endpoint = new URL('https://redisq.zkillboard.com/listen.php');
@@ -68,8 +75,13 @@ const isOpportunityKillmail = (zkbPackage: ZKBPackage) => {
   const isLowsec = zkbPackage.zkb.labels.includes('loc:lowsec');
   if (!isHighsec && !isLowsec) return false;
 
-  const isKilledByNpc = zkbPackage.zkb.npc;
-  if (!isKilledByNpc) return false;
+  const isNPCKillmail = zkbPackage.zkb.npc;
+  if (!isNPCKillmail) return false;
+
+  const isIgnoredVictimCorporation = IGNORED_VICTIM_CORPORATIONS.includes(
+    zkbPackage.killmail.victim.corporation_id,
+  );
+  if (isIgnoredVictimCorporation) return false;
 
   const isValuable =
     zkbPackage.zkb.droppedValue > config.notifications.opportinities.threshold;
