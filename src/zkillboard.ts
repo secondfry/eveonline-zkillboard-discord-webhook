@@ -86,8 +86,8 @@ const isOpportunityKillmail = (zkbPackage: ZKBPackage) => {
     config.notifications.opportinities.threshold.value;
   if (!isValuable) {
     debug(
-      'Wreck is not valuable enough: %o',
-      (zkbPackage.zkb.droppedValue / 1000) * 1000,
+      'Wreck is not valuable enough: %sM ISK',
+      (zkbPackage.zkb.droppedValue / (1000 * 1000)).toFixed(2),
     );
     return false;
   }
