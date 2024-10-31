@@ -72,8 +72,18 @@ const isOpportunityKillmail = (zkbPackage: ZKBPackage) => {
   if (!config.notifications.opportinities.enabled) return false;
   const debug = fdebug.extend('isOpportunityKillmail');
 
+  const now = Date.now();
+  const then = Date.parse(zkbPackage.killmail.killmail_time);
+  const isRecentEnough =
+    now - then < config.notifications.opportinities.threshold.time;
+  if (!isRecentEnough) {
+    debug('Wreck is too old');
+    return false;
+  }
+
   const isValuable =
-    zkbPackage.zkb.droppedValue > config.notifications.opportinities.threshold;
+    zkbPackage.zkb.droppedValue >
+    config.notifications.opportinities.threshold.value;
   if (!isValuable) {
     debug(
       'Wreck is not valuable enough: %o',

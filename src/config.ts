@@ -18,7 +18,10 @@ type Config = {
     corporations: number[];
     opportinities: {
       enabled: boolean;
-      threshold: number;
+      threshold: {
+        time: number;
+        value: number;
+      };
     };
   };
   zkillboard: {
@@ -34,7 +37,8 @@ declare module 'bun' {
     NOTIFICATIONS_CHARACTERS?: string;
     NOTIFICATIONS_CORPORATIONS?: string;
     OPPORTINITIES_ENABLED?: string;
-    OPPORTINITIES_THRESHOLD?: string;
+    OPPORTINITIES_THRESHOLD_TIME?: string;
+    OPPORTINITIES_THRESHOLD_VALUE?: string;
     ZKILLBOARD_QUEUEID?: string;
   }
 }
@@ -46,7 +50,10 @@ const {
   NOTIFICATIONS_CHARACTERS,
   NOTIFICATIONS_CORPORATIONS,
   OPPORTINITIES_ENABLED,
-  OPPORTINITIES_THRESHOLD = '100000000',
+  // NOTE(secondfry): 3 hours, 1000 * 60 * 60 * 3
+  OPPORTINITIES_THRESHOLD_TIME = '10800000',
+  // NOTE(secondfry): 50M ISK
+  OPPORTINITIES_THRESHOLD_VALUE = '50000000',
   ZKILLBOARD_QUEUEID,
 } = process.env;
 assert(DEPLOYMENT_CONTACT_EMAIL, 'Provide DEPLOYMENT_CONTACT_EMAIL');
@@ -65,8 +72,13 @@ assert(
   'No notifications provided, provide at least one of NOTIFICATIONS_ALLIANCES, NOTIFICATIONS_CHARACTERS, NOTIFICATIONS_CORPORATIONS',
 );
 
-const opportinitiesEnabled = z.coerce.boolean().parse(OPPORTINITIES_ENABLED);
-const opportinitiesThreshold = z.coerce.number().parse(OPPORTINITIES_THRESHOLD);
+const opportinities = {
+  enabled: z.coerce.boolean().parse(OPPORTINITIES_ENABLED),
+  threshold: {
+    time: z.coerce.number().parse(OPPORTINITIES_THRESHOLD_TIME),
+    value: z.coerce.number().parse(OPPORTINITIES_THRESHOLD_VALUE),
+  },
+};
 
 const debug = getDebug('config');
 
@@ -81,10 +93,7 @@ const config = {
     alliances,
     characters,
     corporations,
-    opportinities: {
-      enabled: opportinitiesEnabled,
-      threshold: opportinitiesThreshold,
-    },
+    opportinities,
   },
   zkillboard: {
     queueID,
