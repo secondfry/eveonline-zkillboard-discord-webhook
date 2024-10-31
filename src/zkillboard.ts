@@ -11,18 +11,18 @@ const IGNORED_VICTIM_CORPORATIONS = [
   1000127,
 ];
 
-const debug = getDebug('zkillboard');
+const fdebug = getDebug('zkillboard');
 
 const endpoint = new URL('https://redisq.zkillboard.com/listen.php');
 endpoint.searchParams.set('queueID', config.zkillboard.queueID);
-debug('Endpoint: %s', String(endpoint));
+fdebug('Endpoint: %s', String(endpoint));
 
 const headers = {
   'User-Agent': `eveonline-zkillboard-discord-webhook, ${config.deployment.contactEmail}`,
 };
 
 const fetchNext = async () => {
-  const debug = getDebug('zkillboard:fetchNext');
+  const debug = fdebug.extend('fetchNext');
   debug('Fetching next kill');
   const res = await fetch(endpoint, { headers });
   if (!res.ok) {
@@ -70,35 +70,50 @@ const isWatchedKillmail = (zkbPackage: ZKBPackage) => {
 
 const isOpportunityKillmail = (zkbPackage: ZKBPackage) => {
   if (!config.notifications.opportinities.enabled) return false;
+  const debug = fdebug.extend('isOpportunityKillmail');
+
+  const isValuable =
+    zkbPackage.zkb.droppedValue > config.notifications.opportinities.threshold;
+  if (!isValuable) {
+    debug(
+      'Wreck is not valuable enough: %o',
+      (zkbPackage.zkb.droppedValue / 1000) * 1000,
+    );
+    return false;
+  }
 
   const isHighsec = zkbPackage.zkb.labels.includes('loc:highsec');
   const isLowsec = zkbPackage.zkb.labels.includes('loc:lowsec');
-  if (!isHighsec && !isLowsec) return false;
+  if (!isHighsec && !isLowsec) {
+    debug('Wreck is most probably too far away');
+    return false;
+  }
 
   const isNPCKillmail = zkbPackage.zkb.npc;
-  if (!isNPCKillmail) return false;
+  if (!isNPCKillmail) {
+    debug('NPC were not involved with this');
+    return false;
+  }
 
   const isIgnoredVictimCorporation = IGNORED_VICTIM_CORPORATIONS.includes(
     zkbPackage.killmail.victim.corporation_id,
   );
-  if (isIgnoredVictimCorporation) return false;
-
-  const isValuable =
-    zkbPackage.zkb.droppedValue > config.notifications.opportinities.threshold;
-  if (!isValuable) return false;
+  if (isIgnoredVictimCorporation) {
+    debug('Wreck victim corporation is ignored');
+    return false;
+  }
 
   return true;
 };
 
 const transform = (rawKill: RedisQResponse): TransformResult | undefined => {
-  const debug = getDebug('zkillboard:transform');
+  const debug = fdebug.extend('transform');
   if (!rawKill?.package) {
     debug('No kills found in last 10 seconds');
     return;
   }
 
-  const extended = getDebug('zkillboard:transform:extended');
-  extended('Raw kill: %o', rawKill.package);
+  debug('Raw kill: %o', rawKill.package);
 
   debug('Transforming raw JSON to our data');
   return {
@@ -108,7 +123,7 @@ const transform = (rawKill: RedisQResponse): TransformResult | undefined => {
 };
 
 const filter = (data: TransformResult) => {
-  const debug = getDebug('zkillboard:filter');
+  const debug = fdebug.extend('filter');
   if (isWatchedKillmail(data.raw)) {
     debug('This killmail is watched');
     return {
