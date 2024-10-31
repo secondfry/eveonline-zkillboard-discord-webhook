@@ -7,9 +7,9 @@ const debug = getDebug('main');
 const run = async () => {
   while (true) {
     debug('Next cycle');
-    const data = await get();
+    const data = await get().catch(console.error);
     if (!data) continue;
-    await send(data.message);
+    await send(data.message).catch(console.error);
   }
 };
 
