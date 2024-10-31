@@ -89,6 +89,13 @@ const RedisQResponse = z.object({
 });
 type RedisQResponse = z.infer<typeof RedisQResponse>;
 
+type TransformedKillmail = {
+  isOpportunityKillmail: boolean;
+  isWatchedAsAttackers: boolean;
+  isWatchedAsVictims: boolean;
+  raw: ZKBPackage;
+};
+
 export {
   Alliances,
   Attacker,
@@ -101,3 +108,4 @@ export {
   ZKBMetadata,
   ZKBPackage,
 };
+export type { TransformedKillmail };

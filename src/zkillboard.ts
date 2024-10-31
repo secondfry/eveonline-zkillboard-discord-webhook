@@ -1,8 +1,7 @@
 import { config } from './config';
+import { valueToMISK } from './formatters';
 import { getDebug } from './log';
-import { RedisQResponse, ZKBPackage } from './types';
-
-type TransformResult = { message: string; raw: ZKBPackage };
+import { RedisQResponse, ZKBPackage, type TransformedKillmail } from './types';
 
 const IGNORED_VICTIM_CORPORATIONS = [
   // NOTE(secondfry): Blood Raiders
@@ -42,7 +41,7 @@ const fetchNext = async () => {
   }
 };
 
-const isWatchedKillmail = (zkbPackage: ZKBPackage) => {
+const isWatchedAsAttackers = (zkbPackage: ZKBPackage) => {
   const watchedByAttackers = zkbPackage.killmail.attackers.some(
     (attacker) =>
       config.notifications.characters.includes(attacker.character_id ?? 0) ||
@@ -51,8 +50,10 @@ const isWatchedKillmail = (zkbPackage: ZKBPackage) => {
       ) ||
       config.notifications.alliances.includes(attacker.alliance_id ?? 0),
   );
-  if (watchedByAttackers) return true;
+  return watchedByAttackers;
+};
 
+const isWatchedAsVictims = (zkbPackage: ZKBPackage) => {
   const watchedByVictims =
     config.notifications.characters.includes(
       zkbPackage.killmail.victim.character_id ?? 0,
@@ -63,9 +64,7 @@ const isWatchedKillmail = (zkbPackage: ZKBPackage) => {
     config.notifications.alliances.includes(
       zkbPackage.killmail.victim.alliance_id ?? 0,
     );
-  if (watchedByVictims) return true;
-
-  return false;
+  return watchedByVictims;
 };
 
 const isOpportunityKillmail = (zkbPackage: ZKBPackage) => {
@@ -86,8 +85,8 @@ const isOpportunityKillmail = (zkbPackage: ZKBPackage) => {
     config.notifications.opportinities.threshold.value;
   if (!isValuable) {
     debug(
-      'Wreck is not valuable enough: %sM ISK',
-      (zkbPackage.zkb.droppedValue / (1000 * 1000)).toFixed(2),
+      'Wreck is not valuable enough: %s',
+      valueToMISK(zkbPackage.zkb.droppedValue),
     );
     return false;
   }
@@ -116,7 +115,9 @@ const isOpportunityKillmail = (zkbPackage: ZKBPackage) => {
   return true;
 };
 
-const transform = (rawKill: RedisQResponse): TransformResult | undefined => {
+const transform = (
+  rawKill: RedisQResponse,
+): TransformedKillmail | undefined => {
   const debug = fdebug.extend('transform');
   if (!rawKill?.package) {
     debug('No kills found in last 10 seconds');
@@ -127,27 +128,29 @@ const transform = (rawKill: RedisQResponse): TransformResult | undefined => {
 
   debug('Transforming raw JSON to our data');
   return {
-    message: `https://zkillboard.com/kill/${rawKill.package.killID}`,
+    isOpportunityKillmail: isOpportunityKillmail(rawKill.package),
+    isWatchedAsAttackers: isWatchedAsAttackers(rawKill.package),
+    isWatchedAsVictims: isWatchedAsVictims(rawKill.package),
     raw: rawKill.package,
   };
 };
 
-const filter = (data: TransformResult) => {
+const filter = (data: TransformedKillmail) => {
   const debug = fdebug.extend('filter');
-  if (isWatchedKillmail(data.raw)) {
-    debug('This killmail is watched');
-    return {
-      message: `Watched: https://zkillboard.com/kill/${data.raw.killID}`,
-      raw: data.raw,
-    };
+
+  if (data.isOpportunityKillmail) {
+    debug('This killmail is an opportunity');
+    return data;
   }
 
-  if (isOpportunityKillmail(data.raw)) {
-    debug('This killmail is an opportunity');
-    return {
-      message: `Opportunity: https://zkillboard.com/kill/${data.raw.killID}`,
-      raw: data.raw,
-    };
+  if (data.isWatchedAsAttackers) {
+    debug('We are attackers in this killmail, yay!');
+    return data;
+  }
+
+  if (data.isWatchedAsVictims) {
+    debug('We are victims in this killmail :(');
+    return data;
   }
 
   debug('Skipping this killmail');

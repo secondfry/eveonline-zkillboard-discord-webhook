@@ -1,4 +1,4 @@
-import { WebhookClient } from 'discord.js';
+import { WebhookClient, type WebhookMessageCreateOptions } from 'discord.js';
 
 import { config } from './config';
 import { getDebug } from './log';
@@ -9,9 +9,14 @@ const webhook = new WebhookClient({
 
 const debug = getDebug('discord');
 
-const send = async (message = 'Hello via Bun!') => {
-  debug('Sending');
+const sendString = async (message = 'Hello via Bun!') => {
+  debug('Sending simple string');
   await webhook.send(message);
 };
 
-export { send };
+const sendMessage = async (message: WebhookMessageCreateOptions) => {
+  debug('Sending MessagePayload');
+  await webhook.send(message);
+};
+
+export { sendMessage, sendString };

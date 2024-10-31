@@ -1,4 +1,5 @@
-import { send } from './src/discord';
+import { sendMessage } from './src/discord';
+import { killmailToMessagePayload } from './src/formatters';
 import { getDebug } from './src/log';
 import { get } from './src/zkillboard';
 
@@ -7,9 +8,10 @@ const debug = getDebug('main');
 const run = async () => {
   while (true) {
     debug('Next cycle');
-    const data = await get().catch(console.error);
-    if (!data) continue;
-    await send(data.message).catch(console.error);
+    const killmail = await get().catch(console.error);
+    if (!killmail) continue;
+    const message = killmailToMessagePayload(killmail);
+    await sendMessage(message).catch(console.error);
   }
 };
 
