@@ -61,6 +61,7 @@ assert(DISCORD_WEBHOOK_URL, 'Provide DISCORD_WEBHOOK_URL');
 assert(ZKILLBOARD_QUEUEID, 'Provide ZKILLBOARD_QUEUEID');
 
 // NOTE(secondfry): only use valid characters
+// eslint-disable-next-line no-useless-escape
 const queueID = ZKILLBOARD_QUEUEID.replace(/[^a-zA-Z0-9\-]/g, '');
 assert(queueID, 'Invalid ZKILLBOARD_QUEUEID');
 

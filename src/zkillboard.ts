@@ -30,7 +30,7 @@ const fetchNext = async () => {
     throw new Error('Could not fetch next kill', { cause: error });
   }
   debug('Attemping to extract JSON');
-  const unparsed = await res.json();
+  const unparsed = (await res.json()) as unknown;
   try {
     debug('Validating raw JSON');
     const data = RedisQResponse.parse(unparsed);
@@ -85,7 +85,7 @@ const isOpportunityKillmail = (zkbPackage: ZKBPackage) => {
     config.notifications.opportinities.threshold.value;
   if (!isValuable) {
     debug(
-      'Wreck is not valuable enough: %s',
+      'Wreck is not valuable enough: %sM ISK',
       valueToMISK(zkbPackage.zkb.droppedValue),
     );
     return false;

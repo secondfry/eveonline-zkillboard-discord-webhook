@@ -27,6 +27,10 @@
     "format": "npm-run-all format:eslint format:prettier",
     "lint:eslint": "eslint .",
     "lint:prettier": "prettier . --check",
-    "lint": "npm-run-all lint:*"
+    "lint": "npm-run-all lint:*",
+    "postinstall:inv-types": "bun scripts/fetch-and-filter-inv-types.ts",
+    "postinstall:map-denormalize": "bun scripts/fetch-and-filter-map-denormalize.ts",
+    "postinstall:map-jumps": "bun scripts/fetch-map-jumps.ts",
+    "postinstall": "npm-run-all postinstall:inv-types postinstall:map-denormalize postinstall:map-jumps"
   }
 }

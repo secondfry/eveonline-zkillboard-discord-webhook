@@ -12,7 +12,10 @@ const config = tseslint.config(
         tsconfigRootDir: import.meta.dirname,
       },
     },
-  }
+  },
+  {
+    ignores: ['./data/*', './.prettierrc.mjs'],
+  },
 );
 
 export default config;
